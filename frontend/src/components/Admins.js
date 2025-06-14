@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, FileText, User, Users, ChevronDown, Home, UserCircle, Calendar as CalendarIcon, Eye, EyeOff, Hospital, Stethoscope, Activity, DollarSign, UserPlus, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import API_ENDPOINTS, { getAuthHeader } from '../config/api';
 
 const Button = ({ children, variant = 'primary', className = '', ...props }) => (
   <button
@@ -108,20 +109,15 @@ export default function AdminDashboard() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        // Handle not authenticated case
         return;
       }
-      const response = await fetch('http://localhost:5000/api/admin/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.ADMIN_PROFILE, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
         setAdminInfo(data);
-        setEditedInfo(data);
       } else {
-        // Handle error
         console.error('Failed to fetch admin profile');
       }
     } catch (error) {
@@ -135,10 +131,8 @@ export default function AdminDashboard() {
       if (!token) {
         return;
       }
-      const response = await fetch('http://localhost:5000/api/admin/total-doctors', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.TOTAL_DOCTORS, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
@@ -157,10 +151,8 @@ export default function AdminDashboard() {
       if (!token) {
         return;
       }
-      const response = await fetch('http://localhost:5000/api/admin/total-patients', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.TOTAL_PATIENTS, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
@@ -179,10 +171,8 @@ export default function AdminDashboard() {
       if (!token) {
         return;
       }
-      const response = await fetch('http://localhost:5000/api/admin/doctor-overview', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.DOCTOR_OVERVIEW, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
@@ -201,10 +191,8 @@ export default function AdminDashboard() {
       if (!token) {
         return;
       }
-      const response = await fetch('http://localhost:5000/api/admin/patient-overview', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.PATIENT_OVERVIEW, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
@@ -380,12 +368,9 @@ export default function AdminDashboard() {
           navigate('/login');
           return;
         }
-        const response = await fetch('http://localhost:5000/api/admin/profile', {
+        const response = await fetch(API_ENDPOINTS.ADMIN_PROFILE, {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: getAuthHeader(),
           body: JSON.stringify({
             firstName: editedInfo.firstName,
             lastName: editedInfo.lastName,
@@ -470,17 +455,9 @@ export default function AdminDashboard() {
     const handleSubmit = async (e) => {
       e.preventDefault();
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          alert('You are not authenticated. Please log in.');
-          return;
-        }
-        const response = await fetch('http://localhost:5000/api/admin/add-doctor', {
+        const response = await fetch(API_ENDPOINTS.ADD_DOCTOR, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: getAuthHeader(),
           body: JSON.stringify(doctorData)
         });
         if (response.ok) {
@@ -494,9 +471,6 @@ export default function AdminDashboard() {
             phoneNumber: '',
             password: ''
           });
-        } else if (response.status === 401) {
-          alert('Your session has expired. Please log in again.');
-          // Redirect to login page or handle re-authentication
         } else {
           const errorData = await response.json();
           alert(`Error: ${errorData.error}`);
@@ -594,17 +568,9 @@ export default function AdminDashboard() {
         return;
       }
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          alert('You are not authenticated. Please log in.');
-          return;
-        }
-        const response = await fetch('http://localhost:5000/api/admin/add-admin', {
+        const response = await fetch(API_ENDPOINTS.ADD_ADMIN, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: getAuthHeader(),
           body: JSON.stringify(adminData)
         });
         if (response.ok) {
@@ -616,9 +582,6 @@ export default function AdminDashboard() {
             password: '',
             confirmPassword: ''
           });
-        } else if (response.status === 401) {
-          alert('Your session has expired. Please log in again.');
-          // Redirect to login page or handle re-authentication
         } else {
           const errorData = await response.json();
           alert(`Error: ${errorData.error}`);

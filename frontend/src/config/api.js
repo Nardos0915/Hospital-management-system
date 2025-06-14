@@ -1,5 +1,5 @@
 // Use the production API URL directly
-const API_URL = 'https://hospital-management-system-bcgy.onrender.com';
+const API_URL = 'https://hospital-management-backend.onrender.com';
 
 const API_ENDPOINTS = {
   // Authentication
@@ -12,6 +12,8 @@ const API_ENDPOINTS = {
   ADD_ADMIN: `${API_URL}/api/admin/add-admin`,
   DOCTOR_OVERVIEW: `${API_URL}/api/admin/doctor-overview`,
   PATIENT_OVERVIEW: `${API_URL}/api/admin/patient-overview`,
+  TOTAL_DOCTORS: `${API_URL}/api/admin/total-doctors`,
+  TOTAL_PATIENTS: `${API_URL}/api/admin/total-patients`,
 
   // Doctor Routes
   DOCTOR_PROFILE: `${API_URL}/api/doctor/profile`,
