@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, FileText, User, Users, ChevronDown, Home, UserCircle, Calendar as CalendarIcon, Eye, EyeOff, Hospital, Stethoscope } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import API_ENDPOINTS, { getAuthHeader } from '../config/api';
 
 const Button = ({ children, variant = 'primary', className = '', ...props }) => (
   <button
@@ -104,10 +105,8 @@ export default function DoctorDashboard() {
     if (!patientId) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/doctor/prescriptions/${patientId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(`${API_ENDPOINTS.DOCTOR_PRESCRIPTIONS}/${patientId}`, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const prescriptions = await response.json();
@@ -129,10 +128,8 @@ export default function DoctorDashboard() {
         navigate('/login');
         return;
       }
-      const response = await fetch('http://localhost:5000/api/doctor/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.DOCTOR_PROFILE, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
@@ -153,14 +150,12 @@ export default function DoctorDashboard() {
         navigate('/login');
         return;
       }
-      const response = await fetch('http://localhost:5000/api/doctor/patients-with-appointments', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.DOCTOR_APPOINTMENTS, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Patients with appointments:', data); // Add this line for debugging
+        console.log('Patients with appointments:', data);
         setPatients(data);
       } else {
         console.error('Failed to fetch patients with appointments');
@@ -177,10 +172,8 @@ export default function DoctorDashboard() {
         navigate('/login');
         return;
       }
-      const response = await fetch('http://localhost:5000/api/doctor/appointments', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(API_ENDPOINTS.DOCTOR_APPOINTMENTS, {
+        headers: getAuthHeader()
       });
       if (response.ok) {
         const data = await response.json();
@@ -195,6 +188,98 @@ export default function DoctorDashboard() {
       }
     } catch (error) {
       console.error('Error fetching appointments:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await fetch(API_ENDPOINTS.DOCTOR_PROFILE, {
+        method: 'PUT',
+        headers: getAuthHeader(),
+        body: JSON.stringify(editedInfo)
+      });
+      if (response.ok) {
+        const updatedProfile = await response.json();
+        setDoctorInfo(updatedProfile);
+        setIsEditing(false);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update doctor profile: ${errorData.error}`);
+      }
+    } catch (error) {
+      alert('Error updating doctor profile. Please try again.');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (selectedAction === 'prescribe-medication') {
+      try {
+        const url = appointmentData.prescriptionId
+          ? `${API_ENDPOINTS.DOCTOR_PRESCRIPTIONS}/${appointmentData.prescriptionId}`
+          : API_ENDPOINTS.PRESCRIBE_MEDICATION;
+        const method = appointmentData.prescriptionId ? 'PUT' : 'POST';
+        const response = await fetch(url, {
+          method,
+          headers: getAuthHeader(),
+          body: JSON.stringify({
+            patientId: appointmentData.patientId,
+            medication: appointmentData.medication,
+            dosage: appointmentData.dosage,
+            frequency: appointmentData.frequency
+          })
+        });
+        if (response.ok) {
+          const result = await response.json();
+          alert(appointmentData.prescriptionId ? 'Medication updated successfully' : 'Medication prescribed successfully');
+          setAppointmentData({
+            ...appointmentData,
+            prescriptionId: '',
+            medication: '',
+            dosage: '',
+            frequency: ''
+          });
+          fetchExistingPrescriptions(appointmentData.patientId);
+          setSelectedAction('');
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to ${appointmentData.prescriptionId ? 'update' : 'prescribe'} medication: ${errorData.error}`);
+        }
+      } catch (error) {
+        alert(`Error ${appointmentData.prescriptionId ? 'updating' : 'prescribing'} medication. Please try again.`);
+      }
+    } else {
+      try {
+        const response = await fetch(API_ENDPOINTS.SCHEDULE_APPOINTMENT, {
+          method: 'POST',
+          headers: getAuthHeader(),
+          body: JSON.stringify({
+            patientId: appointmentData.patientId,
+            date: appointmentData.date,
+            time: appointmentData.time,
+            reason: appointmentData.reason
+          })
+        });
+        if (response.ok) {
+          alert('Appointment scheduled successfully');
+          setAppointmentData({
+            patientId: '',
+            date: '',
+            time: '',
+            reason: '',
+            prescriptionId: '',
+            medication: '',
+            dosage: '',
+            frequency: ''
+          });
+          setSelectedAction('');
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to schedule appointment: ${errorData.error}`);
+        }
+      } catch (error) {
+        alert('Error scheduling appointment. Please try again.');
+      }
     }
   };
 
@@ -340,30 +425,6 @@ export default function DoctorDashboard() {
       setEditedInfo(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/doctor/profile', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(editedInfo)
-        });
-        if (response.ok) {
-          const updatedProfile = await response.json();
-          setDoctorInfo(updatedProfile);
-          setIsEditing(false);
-        } else {
-          const errorData = await response.json();
-          alert(`Failed to update doctor profile: ${errorData.error}`);
-        }
-      } catch (error) {
-        alert('Error updating doctor profile. Please try again.');
-      }
-    };
-
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
@@ -472,10 +533,8 @@ export default function DoctorDashboard() {
       if (!patientId || !date) return;
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/doctor/available-slots?patientId=${patientId}&date=${date}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await fetch(`${API_ENDPOINTS.DOCTOR_AVAILABLE_SLOTS}?patientId=${patientId}&date=${date}`, {
+          headers: getAuthHeader()
         });
         if (response.ok) {
           const slots = await response.json();
@@ -504,12 +563,9 @@ export default function DoctorDashboard() {
     const handleDeletePrescription = async (prescriptionId) => {
       if (window.confirm('Are you sure you want to delete this prescription?')) {
         try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(`http://localhost:5000/api/doctor/prescriptions/${prescriptionId}`, {
+          const response = await fetch(`${API_ENDPOINTS.DOCTOR_PRESCRIPTIONS}/${prescriptionId}`, {
             method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            headers: getAuthHeader()
           });
           if (response.ok) {
             alert('Prescription deleted successfully');
@@ -522,86 +578,6 @@ export default function DoctorDashboard() {
         } catch (error) {
           alert('Error deleting prescription. Please try again.');
           console.error('Error deleting prescription:', error);
-        }
-      }
-    };
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      if (selectedAction === 'prescribe-medication') {
-        try {
-          const token = localStorage.getItem('token');
-          const url = appointmentData.prescriptionId
-            ? `http://localhost:5000/api/doctor/prescriptions/${appointmentData.prescriptionId}`
-            : 'http://localhost:5000/api/doctor/prescribe-medication';
-          const method = appointmentData.prescriptionId ? 'PUT' : 'POST';
-          const response = await fetch(url, {
-            method,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              patientId: appointmentData.patientId,
-              medication: appointmentData.medication,
-              dosage: appointmentData.dosage,
-              frequency: appointmentData.frequency
-            })
-          });
-          if (response.ok) {
-            const result = await response.json();
-            alert(appointmentData.prescriptionId ? 'Medication updated successfully' : 'Medication prescribed successfully');
-            setAppointmentData({
-              ...appointmentData,
-              prescriptionId: '',
-              medication: '',
-              dosage: '',
-              frequency: ''
-            });
-            fetchExistingPrescriptions(appointmentData.patientId);
-            setSelectedAction('');
-          } else {
-            const errorData = await response.json();
-            alert(`Failed to ${appointmentData.prescriptionId ? 'update' : 'prescribe'} medication: ${errorData.error}`);
-          }
-        } catch (error) {
-          alert(`Error ${appointmentData.prescriptionId ? 'updating' : 'prescribing'} medication. Please try again.`);
-        }
-      } else if (selectedAction === 'schedule-appointment') {
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch('http://localhost:5000/api/doctor/schedule-appointment', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              patientId: appointmentData.patientId,
-              date: appointmentData.date,
-              time: appointmentData.time,
-              reason: appointmentData.reason
-            })
-          });
-          if (response.ok) {
-            alert('Appointment scheduled successfully');
-            setAppointmentData({
-              patientId: '',
-              date: '',
-              time: '',
-              reason: '',
-              prescriptionId: '',
-              medication: '',
-              dosage: '',
-              frequency: ''
-            });
-            setSelectedAction('');
-          } else {
-            const errorData = await response.json();
-            alert(`Failed to schedule appointment: ${errorData.error}`);
-          }
-        } catch (error) {
-          alert('Error scheduling appointment. Please try again.');
         }
       }
     };

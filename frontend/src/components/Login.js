@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, User, Stethoscope, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import API_ENDPOINTS, { getAuthHeader } from '../config/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/login', {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
